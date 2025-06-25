@@ -1,2 +1,16 @@
 theforce.egg-info
 *__pycache__/
+*.log
+*.pckl
+*.traj
+*.xyz
+*.sgpr
+CONTCAR
+*fullerene test
+*.dat
+*diffusion-barrier.png
+*.pdf
+*.DS_Store
+*meta.hist
+*log.lammps
+*dump.Ethane
