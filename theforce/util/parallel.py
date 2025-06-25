@@ -143,6 +143,17 @@ def method_forker(method):
     return forker
 
 
+def synchronize_npt_state(eta, h, zeta):
+    """
+    Synchronizes NPT state variables (eta, h, zeta) across MPI processes.
+    This function is intended to be called from the NPT3 dynamics.
+    """
+    if dist.is_initialized() and dist.get_world_size() > 1:
+        eta = dist.broadcast(eta, src=0)
+        h = dist.broadcast(h, src=0)
+        zeta = dist.broadcast(zeta, src=0)
+    return eta, h, zeta
+
 def example():
     class Dummy:
         def __init__(self):

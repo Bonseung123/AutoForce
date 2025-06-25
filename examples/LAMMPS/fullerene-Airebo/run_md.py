@@ -16,14 +16,26 @@ from ase_md_npt import NPT3
 from ase_md_logger import MDLogger3
 from ase.calculators.lammpslib import LAMMPSlib
 
+# --- 1. Initialize MPI and get communicator ---
+# The mpi_init() function initializes the parallel environment for theforce.
+# To also run the LAMMPSlib calculator in parallel, we need to get the
+# MPI communicator and pass it to LAMMPSlib.
+try:
+    from mpi4py import MPI
+    comm = MPI.COMM_WORLD
+except ImportError:
+    comm = None
+    print("Warning: mpi4py not found. LAMMPS will run in serial.")
+
 process_group = mpi_init()
 
 # Define atoms object
 atoms = read('fullerene.xyz', index=0)
 
+# --- 2. Setup the parallel LAMMPS calculator ---
 cmds = ["pair_style airebo 6 0 0",
         "pair_coeff * * CH.airebo   C"]
-lmp_calc = LAMMPSlib(lmpcmds=cmds, log_file='test.log')
+lmp_calc = LAMMPSlib(lmpcmds=cmds, log_file='test.log', comm=comm)
 
 kernel_kw = {'lmax':3, 'nmax':3, 'exponent':4, 'cutoff':6.0}
 calc = ActiveCalculator(covariance='pckl',
@@ -81,4 +93,3 @@ dyn = NPT3 (atoms,
 logger = MDLogger3 (dyn=dyn, atoms=atoms, logfile='md.dat', stress=True)
 dyn.attach (logger, 2)
 dyn.run (1000000)
-

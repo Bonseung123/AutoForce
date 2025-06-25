@@ -2,6 +2,7 @@
 import sys
 
 import numpy as np
+import torch # Added import for torch
 from mpi4py import MPI
 
 comm = MPI.COMM_WORLD
@@ -44,9 +45,31 @@ def get_rank(group=comm):
     return rank
 
 
-def broadcast(data, src):
-    a = data.detach().numpy()
-    comm.Bcast(a, src)
+def broadcast(data, src): # Modified function
+    # Determine if the original data was a torch.Tensor
+    is_torch_tensor = isinstance(data, torch.Tensor)
+
+    # Convert to numpy array for MPI communication
+    if is_torch_tensor:
+        np_data = data.detach().numpy()
+    elif isinstance(data, np.ndarray):
+        np_data = data
+    else:
+        np_data = np.array(data)
+
+    # Ensure the numpy array is contiguous and writable for MPI
+    if not np_data.flags['C_CONTIGUOUS'] or not np_data.flags['WRITEABLE']:
+        np_data = np.ascontiguousarray(np_data)
+
+    comm.Bcast(np_data, src)
+
+    # Convert back to torch.Tensor if the original data was a torch.Tensor
+    if is_torch_tensor:
+        return torch.from_numpy(np_data)
+    elif isinstance(data, np.ndarray):
+        return np_data
+    else:
+        return np_data.item() # For scalars, return the scalar value
 
 
 def all_reduce(data, op=ReduceOp.SUM):

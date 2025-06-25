@@ -25,6 +25,7 @@ import weakref
 
 import numpy as np
 
+import theforce.util.parallel as parallel_util
 from ase.md.md import MolecularDynamics
 from ase import units
 
@@ -542,7 +543,10 @@ class NPT3(MolecularDynamics):
 
         In a serial simulation, do nothing.
         """
-        pass  # This is a serial simulation object.  Do nothing.
+        #pass  # This is a serial simulation object.  Do nothing.
+        self.eta, self.h, self.zeta = parallel_util.synchronize_npt_state(
+            self.eta, self.h, self.zeta
+        )
 
     def _getnatoms(self):
         """Get the number of atoms.
