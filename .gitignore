@@ -14,3 +14,5 @@ CONTCAR
 *meta.hist
 *log.lammps
 *dump.Ethane
+theforce alias
+.gitignore
