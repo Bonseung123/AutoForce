@@ -25,7 +25,12 @@ import weakref
 
 import numpy as np
 
-import theforce.util.parallel as parallel_util
+# Use theforce's distributed backend for MPI communication.
+# This makes the parallel nature of this class explicit.
+try:
+    from theforce import distributed as dist
+except (ImportError, ModuleNotFoundError):
+    dist = None
 from ase.md.md import MolecularDynamics
 from ase import units
 
@@ -144,9 +149,11 @@ class NPT3(MolecularDynamics):
         MolecularDynamics.__init__(self, atoms, timestep, trajectory,
                                    logfile, loginterval,
                                    append_trajectory=append_trajectory)
+        
                                    #stress=True)
         # self.atoms = atoms
         # self.timestep = timestep
+        self.loginterval = loginterval
         if externalstress is None and pfactor is not None:
             raise TypeError("Missing 'externalstress' argument.")
         self.zero_center_of_mass_momentum(verbose=1)
@@ -543,10 +550,12 @@ class NPT3(MolecularDynamics):
 
         In a serial simulation, do nothing.
         """
-        #pass  # This is a serial simulation object.  Do nothing.
-        self.eta, self.h, self.zeta = parallel_util.synchronize_npt_state(
-            self.eta, self.h, self.zeta
-        )
+        if dist and dist.is_initialized() and dist.get_world_size() > 1:
+            # Broadcast the state from the master (rank 0) to all other processes
+            # to prevent numerical drift between them.
+            self.eta = dist.broadcast(self.eta, src=0)
+            self.h = dist.broadcast(self.h, src=0)
+            self.zeta = dist.broadcast(self.zeta, src=0)
 
     def _getnatoms(self):
         """Get the number of atoms.

@@ -16,7 +16,7 @@ from ase_md_npt import NPT3
 from ase_md_logger import MDLogger3
 from ase.calculators.lammpslib import LAMMPSlib
 
-process_group = mpi_init()
+process_group = None#mpi_init()
 
 # Define atoms object
 atoms = read('fullerene.xyz', index=0)
